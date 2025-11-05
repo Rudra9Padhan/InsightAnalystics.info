@@ -1,16 +1,19 @@
-require('dotenv').config();
-const app = require('./app');
-const connectDB = require('./config/db');
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
 
-const PORT = process.env.PORT || 4000;
+const app = express();
 
-connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`${process.env.APP_NAME || 'app'} listening on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('Failed to start server', err);
-    process.exit(1);
-  });
+// Middlewares
+app.use(express.json());
+app.use(cors());
+app.use(helmet());
+app.use(morgan('dev'));
+
+// Test route
+app.get('/', (req, res) => {
+  res.status(200).json({ message: 'Server is running successfully' });
+});
+
+module.exports = app;
