@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import CTAButton from '../components/CTAButton';
+
+interface FormData {
+    name: string;
+    email: string;
+    companyName: string;
+    service: string;
+    message: string;
+}
 
 const PageHeader: React.FC<{ title: string; subtitle: string }> = ({ title, subtitle }) => (
     <div className="bg-gray-100 dark:bg-gray-800 py-16">
@@ -11,43 +18,54 @@ const PageHeader: React.FC<{ title: string; subtitle: string }> = ({ title, subt
 );
 
 const ContactPage: React.FC = () => {
-    const [formData, setFormData] = useState({ name: '', email: '', companyName: '', service: '', message: '' });
+    const [formData, setFormData] = useState<FormData>({ name: '', email: '', companyName: '', service: '', message: '' });
     const [formStatus, setFormStatus] = useState<'idle' | 'submitting' | 'submitted'>('idle');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData((prev: FormData) => ({ ...prev, [name]: value }));
     };
 
+    // Use NEXT_PUBLIC_API_URL if set (Next.js). Fallback to relative path.
+    const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        // basic client-side required check
+        if (!formData.name || !formData.email || !formData.service || !formData.message) {
+            alert('Please fill name, email, service and message.');
+            return;
+        }
+
         setFormStatus('submitting');
         try {
-            const res = await fetch('/api/contact', {
+            const url = API_BASE ? `${API_BASE}/api/contact` : '/api/contact';
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
             });
 
+            // try to read response body (text) for better error messages
+            const text = await res.text();
+            let body: any = null;
+            try { body = text ? JSON.parse(text) : null; } catch (e) { body = text; }
+
             if (!res.ok) {
-                // try to parse error body, fallback to status text
-                const errBody = await res.json().catch(() => null);
-                throw new Error((errBody && (errBody.error || errBody.message)) || res.statusText);
+                const message = (body && (body.error || body.message)) || res.statusText || text || `HTTP ${res.status}`;
+                throw new Error(message);
             }
 
             // success
-            const result = await res.json().catch(() => ({}));
             setFormStatus('submitted');
             setFormData({ name: '', email: '', companyName: '', service: '', message: '' });
 
             // return to idle after a short delay
             setTimeout(() => setFormStatus('idle'), 3000);
-            console.log('Contact saved:', result);
+            console.log('Contact saved:', body || text);
         } catch (err: any) {
             console.error('Failed to submit contact:', err);
             setFormStatus('idle');
-            // minimal user feedback; you can replace with inline UI later
             alert('Failed to send message: ' + (err.message || 'Unknown error'));
         }
     };
@@ -80,32 +98,30 @@ const ContactPage: React.FC = () => {
                                 ) : (
                                     <form onSubmit={handleSubmit} className="space-y-6">
                                         <div>
-                                            <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-                                            <input type="text" name="name" id="name" required value={formData.name} onChange={handleChange} className="mt-1 block w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-200" />
+                                            <input type="text" name="name" id="name" required value={formData.name} onChange={handleChange} className="mt-1 block w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-200" placeholder="Full name"/>
                                         </div>
                                         <div>
-                                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                                            <input type="email" name="email" id="email" required value={formData.email} onChange={handleChange} className="mt-1 block w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-200" />
+                                            <input type="email" name="email" id="email" required value={formData.email} onChange={handleChange} className="mt-1 block w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-200" placeholder="Email address"/>
                                         </div>
                                         <div>
-                                            <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Company Name</label>
-                                            <input type="text" name="companyName" id="companyName" value={formData.companyName} onChange={handleChange} className="mt-1 block w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-200" />
+                                            <input type="text" name="companyName" id="companyName" value={formData.companyName} onChange={handleChange} className="mt-1 block w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-200" placeholder="Company (optional)"/>
                                         </div>
                                         <div>
-                                            <label htmlFor="service" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Service Interested In</label>
-                                            <select name="service" id="service" required value={formData.service} onChange={handleChange} className="mt-1 block w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-200">
-                                                <option value="" disabled>Select a service</option>
+                                            <label htmlFor="service" className="sr-only">Service</label>
+                                            <select name="service" id="service" required value={formData.service} onChange={handleChange} className="mt-1 block w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+                                                <option value="">Select a service</option>
                                                 {services.map(s => <option key={s} value={s}>{s}</option>)}
                                             </select>
                                         </div>
                                         <div>
-                                            <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Message</label>
-                                            <textarea name="message" id="message" rows={5} required value={formData.message} onChange={handleChange} className="mt-1 block w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-200"></textarea>
+                                            <label htmlFor="message" className="sr-only">Message</label>
+                                            <textarea name="message" id="message" required value={formData.message} onChange={handleChange} rows={5} className="mt-1 block w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="Tell us about your project..."></textarea>
                                         </div>
+
                                         <div>
-                                            <CTAButton type="submit" disabled={formStatus === 'submitting'}>
+                                            <button type="submit" disabled={formStatus === 'submitting'} className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-md">
                                                 {formStatus === 'submitting' ? 'Sending...' : 'Send Message'}
-                                            </CTAButton>
+                                            </button>
                                         </div>
                                     </form>
                                 )}
