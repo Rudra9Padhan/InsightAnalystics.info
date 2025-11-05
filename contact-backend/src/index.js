@@ -1,14 +1,16 @@
-const express = require('express');
-const mongoose = require('mongoose');
+require('dotenv').config();
 const app = require('./app');
-const dbConfig = require('./config/db');
+const connectDB = require('./config/db');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
-// Connect to MongoDB
-dbConfig();
-
-// Start the server
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`${process.env.APP_NAME || 'app'} listening on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to start server', err);
+    process.exit(1);
+  });

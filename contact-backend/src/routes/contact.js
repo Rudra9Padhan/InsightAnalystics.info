@@ -1,10 +1,8 @@
 const express = require('express');
-const ContactController = require('../controllers/contactController');
-
 const router = express.Router();
-const contactController = new ContactController();
+const { createContact } = require('../controllers/contactController');
+const validateRequest = require('../middlewares/validateRequest');
 
-router.post('/contacts', contactController.createContact.bind(contactController));
-router.get('/contacts', contactController.getContacts.bind(contactController));
+router.post('/', validateRequest, createContact);
 
 module.exports = router;

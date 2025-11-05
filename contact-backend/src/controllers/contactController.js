@@ -1,22 +1,16 @@
-class ContactController {
-    async createContact(req, res) {
-        try {
-            const { name, email, message } = req.body;
-            // Logic to save the contact to the database will go here
-            res.status(201).json({ message: 'Contact created successfully' });
-        } catch (error) {
-            res.status(500).json({ message: 'Error creating contact', error: error.message });
-        }
-    }
+const Contact = require('../models/Contact');
 
-    async getContacts(req, res) {
-        try {
-            // Logic to retrieve contacts from the database will go here
-            res.status(200).json({ message: 'Contacts retrieved successfully', contacts: [] });
-        } catch (error) {
-            res.status(500).json({ message: 'Error retrieving contacts', error: error.message });
-        }
-    }
-}
+exports.createContact = async (req, res, next) => {
+  try {
+    const { name, email, message } = req.body;
 
-export default new ContactController();
+    const contact = new Contact({ name, email, message });
+    await contact.save();
+
+    // placeholder: you can integrate email sending here
+
+    res.status(201).json({ success: true, data: { id: contact._id } });
+  } catch (err) {
+    next(err);
+  }
+};
