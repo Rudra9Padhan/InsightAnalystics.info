@@ -1,9 +1,9 @@
 module.exports = (req, res, next) => {
-  const { name, email, message } = req.body;
-  if (!name || !email || !message) {
-    return res.status(400).json({ error: 'name, email and message are required' });
+  const { name, email, service, message } = req.body;
+  if (!name || !email || !service || !message) {
+    return res.status(400).json({ error: 'name, email, service and message are required' });
   }
-  // minimal email validation
+  // basic email format check
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ error: 'invalid email' });
