@@ -19,18 +19,39 @@ const ContactPage: React.FC = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormStatus('submitting');
-        console.log("Form submitted:", formData);
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const res = await fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+
+            if (!res.ok) {
+                // try to parse error body, fallback to status text
+                const errBody = await res.json().catch(() => null);
+                throw new Error((errBody && (errBody.error || errBody.message)) || res.statusText);
+            }
+
+            // success
+            const result = await res.json().catch(() => ({}));
             setFormStatus('submitted');
             setFormData({ name: '', email: '', companyName: '', service: '', message: '' });
+
+            // return to idle after a short delay
             setTimeout(() => setFormStatus('idle'), 3000);
-        }, 1500);
+            console.log('Contact saved:', result);
+        } catch (err: any) {
+            console.error('Failed to submit contact:', err);
+            setFormStatus('idle');
+            // minimal user feedback; you can replace with inline UI later
+            alert('Failed to send message: ' + (err.message || 'Unknown error'));
+        }
     };
-    
+ 
     const services = [
       'Data Analysis',
       'Website Development',
